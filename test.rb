@@ -27,3 +27,5 @@ def func(arg, &blk)
 end
 
 p func(nums, &block)
+
+p block.map

@@ -82,11 +82,11 @@ module Enumerable
     none_true
   end
 
-  def my_count(arg = nil)
+  def my_count(arg = nil, &blk)
     accumulator = 0
     if block_given?
       if arg
-        warn('given block not used')
+        warn("#{__FILE__}:#{__LINE__}: warning: given block not used")
         my_each { |e| accumulator += 1 if arg === e }
       else
         my_each { |e| accumulator += 1 if blk.call(e) }
@@ -99,21 +99,24 @@ module Enumerable
     accumulator
   end
 
-  def my_map(&blk)
-    return to_enum(:map) unless block_given?
-
+  def my_map(a_proc = nil, &blk)
     arr = []
-    my_each { |e| arr.push(blk.call(e)) }
+    if a_proc
+      my_each { |e| arr.push(a_proc.call(e)) }
+      arr
+    else
+      return to_enum(:map) unless block_given?
+
+      my_each { |e| arr.push(blk.call(e)) }
+    end
     arr
   end
 
   def my_inject(a = nil, b = nil, &blk)
     accumulator = ''
-    if instance_of?(Range)
-      accumulator = 0
-      accumulator += a unless a.nil? || a.instance_of?(Symbol)
-      accumulator += 1 if a == :* || a == :/
-    end
+    accumulator = 0 if instance_of?(Array) && my_all? { |e| e.instance_of?(Integer) } || instance_of?(Range)
+    accumulator += a unless a.nil? || a.instance_of?(Symbol)
+    accumulator += 1 if a == :* || a == :/
     if block_given?
       my_each { |e| accumulator = blk.call(accumulator, e) }
     elsif a.instance_of?(Symbol)
@@ -149,100 +152,113 @@ a = [:foo, 'bar', :bam]
 a2 = %w[food fool foot]
 a3 = [0, 1, 2]
 
-# puts "each"
-# numbers.each { |item| puts item }
-# h.each { |key, value| puts "#{key}: #{value}" }
-# p numbers.each
-# puts "my_each"
-# numbers.my_each { |item| puts item }
-# h.my_each { |key, value| puts "#{key}: #{value}" }
-# p numbers.my_each
+puts ''
+puts "each"
+numbers.each { |item| puts item }
+h.each { |key, value| puts "#{key}: #{value}" }
+p numbers.each
+puts ''
+puts "my_each"
+numbers.my_each { |item| puts item }
+h.my_each { |key, value| puts "#{key}: #{value}" }
+p numbers.my_each
 
-# puts "each_with_index"
-# numbers.each_with_index { |v, i| puts "#{i} #{v}" }
-# p numbers.each_with_index
-# puts "my_each_with_index"
-# numbers.my_each_with_index { |v, i| puts "#{i} #{v}" }
-# p numbers.my_each_with_index
+puts ''
+puts "each_with_index"
+numbers.each_with_index { |v, i| puts "#{i} #{v}" }
+p numbers.each_with_index
+puts ''
+puts "my_each_with_index"
+numbers.my_each_with_index { |v, i| puts "#{i} #{v}" }
+p numbers.my_each_with_index
 
-# puts "select"
-# p a.select { |e| e.to_s.start_with?('b') }
-# p h.select { |_k, v| v < 2 }
-# puts "my_select"
-# p a.my_select { |e| e.to_s.start_with?('b') }
-# p h.my_select { |_k, v| v < 2 }
+puts ''
+puts "select"
+p a.select { |e| e.to_s.start_with?('b') }
+p h.select { |_k, v| v < 2 }
+puts ''
+puts "my_select"
+p a.my_select { |e| e.to_s.start_with?('b') }
+p h.my_select { |_k, v| v < 2 }
 
-# puts "all?"
-# p a.all?
-# p a2.all?(/foo/)
-# p a3.all? { |e| e < 3 }
-# puts "my_all?"
-# p a.my_all?
-# p a2.my_all?(/foo/)
-# p a3.my_all? { |e| e < 3 }
+puts ''
+puts "all?"
+p a.all?
+p a2.all?(/foo/)
+p a3.all? { |e| e < 3 }
+puts ''
+puts "my_all?"
+p a.my_all?
+p a2.my_all?(/foo/)
+p a3.my_all? { |e| e < 3 }
 
-# puts ''
-# puts "any?"
-# p h.any?([:bar, 1]) # => true
-# p h.any?([:bar, 0]) # => false
-# p h.any?([:baz, 1]) # => false
-# p h.any? {|key, value| value < 3 } # => true
-# p h.any? {|key, value| value > 3 } # => false
-# p [nil, 0, false].any? # => true
-# p [nil, false].any? # => false
-# p [].any? # => false
-# p [0, 1, 2].any? {|element| element > 1 } # => true
-# p [0, 1, 2].any? {|element| element > 2 } # => false
-# p ['food', 'drink'].any?(/foo/) # => true
-# p ['food', 'drink'].any?(/bar/) # => false
-# p [].any?(/foo/) # => false
-# p [0, 1, 2].any?(1) # => true
-# p [0, 1, 2].any?(3) # => false
-# puts ''
-# puts "my_any?"
-# p h.my_any?([:bar, 1]) # => true
-# p h.my_any?([:bar, 0]) # => false
-# p h.my_any?([:baz, 1]) # => false
-# p h.my_any? {|key, value| value < 3 } # => true
-# p h.my_any? {|key, value| value > 3 } # => false
-# p [nil, 0, false].my_any? # => true
-# p [nil, false].my_any? # => false
-# p [].my_any? # => false
-# p [0, 1, 2].my_any? {|element| element > 1 } # => true
-# p [0, 1, 2].my_any? {|element| element > 2 } # => false
-# p ['food', 'drink'].my_any?(/foo/) # => true
-# p ['food', 'drink'].my_any?(/bar/) # => false
-# p [].my_any?(/foo/) # => false
-# p [0, 1, 2].my_any?(1) # => true
-# p [0, 1, 2].my_any?(3) # => false
+puts ''
+puts "any?"
+p h.any?([:bar, 1]) # => true
+p h.any?([:bar, 0]) # => false
+p h.any?([:baz, 1]) # => false
+p h.any? {|key, value| value < 3 } # => true
+p h.any? {|key, value| value > 3 } # => false
+p [nil, 0, false].any? # => true
+p [nil, false].any? # => false
+p [].any? # => false
+p [0, 1, 2].any? {|element| element > 1 } # => true
+p [0, 1, 2].any? {|element| element > 2 } # => false
+p ['food', 'drink'].any?(/foo/) # => true
+p ['food', 'drink'].any?(/bar/) # => false
+p [].any?(/foo/) # => false
+p [0, 1, 2].any?(1) # => true
+p [0, 1, 2].any?(3) # => false
 
-# puts "count"
-# p [0, 1, 2].count # => 3
-# p [].count # => 0
-# p [0, 1, 2, 0].count(0) # => 2
-# p [0, 1, 2].count(3) # => 0
-# p [0, 1, 2, 3].count { |element| element > 1 } # => 2
-# p [0, 1, 2, 3].count(2) { |element| element > 1 } # => 1
-# puts ''
-# puts "my_count"
-# p [0, 1, 2].my_count # => 3
-# p [].my_count # => 0
-# p [0, 1, 2, 0].my_count(0) # => 2
-# p [0, 1, 2].my_count(3) # => 0
-# p [0, 1, 2, 3].count { |element| element > 1 } # => 2
+puts ''
+puts "my_any?"
+p h.my_any?([:bar, 1]) # => true
+p h.my_any?([:bar, 0]) # => false
+p h.my_any?([:baz, 1]) # => false
+p h.my_any? {|key, value| value < 3 } # => true
+p h.my_any? {|key, value| value > 3 } # => false
+p [nil, 0, false].my_any? # => true
+p [nil, false].my_any? # => false
+p [].my_any? # => false
+p [0, 1, 2].my_any? {|element| element > 1 } # => true
+p [0, 1, 2].my_any? {|element| element > 2 } # => false
+p ['food', 'drink'].my_any?(/foo/) # => true
+p ['food', 'drink'].my_any?(/bar/) # => false
+p [].my_any?(/foo/) # => false
+p [0, 1, 2].my_any?(1) # => true
+p [0, 1, 2].my_any?(3) # => false
 
-# puts "map"
-# a = [:foo, 'bar', 2]
-# a1 = a.map {|element| element.class }
-# p a1 # => [Symbol, String, Integer]
-# p a.map
-# puts ''
-# puts "my_map"
-# a = [:foo, 'bar', 2]
-# a1 = a.my_map {|element| element.class }
-# p a1 # => [Symbol, String, Integer]
-# p a.my_map
+puts ''
+puts "count"
+p [0, 1, 2].count # => 3
+p [].count # => 0
+p [0, 1, 2, 0].count(0) # => 2
+p [0, 1, 2].count(3) # => 0
+p [0, 1, 2, 3].count { |element| element > 1 } # => 2
+p [0, 1, 2, 3].count(2) { |element| element > 1 } # => 1
+puts ''
+puts "my_count"
+p [0, 1, 2].my_count # => 3
+p [].my_count # => 0
+p [0, 1, 2, 0].my_count(0) # => 2
+p [0, 1, 2].my_count(3) # => 0
+p [0, 1, 2, 3].my_count { |element| element > 1 } # => 2
+p [0, 1, 2, 3].my_count(2) { |element| element > 1 } # => 1
 
+puts ''
+puts "map"
+a = [:foo, 'bar', 2]
+a1 = a.map {|element| element.class }
+p a1 # => [Symbol, String, Integer]
+p a.map
+puts ''
+puts "my_map"
+a = [:foo, 'bar', 2]
+a1 = a.my_map {|element| element.class }
+p a1 # => [Symbol, String, Integer]
+p a.my_map
+
+puts ''
 puts "inject"
 # Sum some numbers
 p (5..10).inject(:+) #=> 45
@@ -267,3 +283,15 @@ longest = %w{cat sheep bear}.my_inject do |memo, word|
   memo.length > word.length ? memo : word
 end
 p longest
+
+def multiply_els(arr)
+  arr.inject(:*)
+end
+puts ''
+puts 'my_map taking a proc'
+block = proc { |e| e }
+block2 = proc { |e| e if e %2 == 0 }
+
+p [1,2,3,4,5].my_map(block)
+p [1,2,3,4,5].my_map(block2)
+
